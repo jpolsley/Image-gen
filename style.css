@@ -192,3 +192,68 @@ footer {
 }
 
 [hidden] { display: none !important; }
+
+/* ----- Tabs, engine picker, mode-specific fields ----- */
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+.tab {
+  flex: 1;
+  font: inherit;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 9px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgb(0 0 0 / 0.12); }
+.tab:disabled { cursor: progress; }
+
+.engine-row { margin-bottom: 16px; }
+.engine-row label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; }
+.engine-note { margin: 6px 0 0; font-size: 0.875rem; color: var(--muted); }
+
+select {
+  font: inherit;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  width: 100%;
+}
+
+.prompt-block {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  margin-top: 20px;
+}
+.prompt-block textarea {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+@media (max-width: 560px) {
+  .prompt-block { flex-direction: column; }
+}
+
+/* Create mode has no input image: result takes the full width. */
+form[data-mode="create"] .edit-only,
+form[data-mode="edit"] .create-only { display: none !important; }
+form[data-mode="create"] .panes { grid-template-columns: 1fr; }
+form[data-mode="create"] .result-pane { max-width: 560px; width: 100%; margin: 0 auto; }

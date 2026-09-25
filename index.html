@@ -3,24 +3,31 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Qwen Image Edit</title>
-  <meta name="description" content="Edit images with natural-language instructions using Qwen-Image-Edit, running on Hugging Face Spaces." />
+  <title>Novel Illustrator</title>
+  <meta name="description" content="Create and edit illustrations with free open image models (RealVisXL, Illustrious, Qwen-Image-Edit) running on Hugging Face Spaces." />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header class="site-header">
-    <h1>Qwen Image Edit</h1>
-    <p class="tagline">
-      Upload an image, describe the change, and let
-      <a href="https://huggingface.co/Qwen/Qwen-Image-Edit" target="_blank" rel="noopener">Qwen-Image-Edit</a>
-      do the rest.
-    </p>
+    <h1>Novel Illustrator</h1>
+    <p class="tagline">Create scenes from a description, or edit an existing image — using free open models on Hugging Face.</p>
   </header>
 
   <main>
-    <form id="edit-form" class="card" autocomplete="off">
+    <form id="gen-form" class="card" autocomplete="off">
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab" role="tab" data-mode="create" aria-selected="true">Create</button>
+        <button type="button" class="tab" role="tab" data-mode="edit" aria-selected="false">Edit an image</button>
+      </div>
+
+      <div class="engine-row">
+        <label for="engine">Engine</label>
+        <select id="engine"></select>
+        <p id="engine-note" class="engine-note"></p>
+      </div>
+
       <div class="panes">
-        <section class="pane">
+        <section class="pane edit-only">
           <h2>Input</h2>
           <label id="dropzone" class="dropzone" for="image-input">
             <img id="input-preview" alt="" hidden />
@@ -29,56 +36,57 @@
           <input id="image-input" type="file" accept="image/*" hidden />
         </section>
 
-        <section class="pane">
+        <section class="pane result-pane">
           <h2>Result</h2>
           <div id="result-box" class="result">
-            <img id="result-image" alt="Edited image" hidden />
+            <img id="result-image" alt="Generated image" hidden />
             <div id="spinner" class="spinner" hidden></div>
-            <span id="result-hint">Your edited image will appear here</span>
+            <span id="result-hint">Your image will appear here</span>
           </div>
-          <a id="download-link" class="button secondary" download="qwen-edit.png" target="_blank" rel="noopener" hidden>Download</a>
+          <a id="download-link" class="button secondary" download="illustration.png" target="_blank" rel="noopener" hidden>Open / download</a>
         </section>
       </div>
 
-      <div class="prompt-row">
-        <input id="prompt" type="text" required
-          placeholder="Describe the edit, e.g. “turn the style into a vintage comic book”" />
-        <button id="run-button" type="submit" class="button">Edit!</button>
-      </div>
-
-      <div class="examples">
-        <span>Try:</span>
-        <button type="button" class="chip">Change the background to a snowy mountain at sunset</button>
-        <button type="button" class="chip">Turn the style into Studio Ghibli animation</button>
-        <button type="button" class="chip">Add a sign that reads “Hello Qwen” in blue crayon</button>
-        <button type="button" class="chip">Rotate the object 180 degrees to show its back</button>
+      <div class="prompt-block">
+        <textarea id="prompt" rows="3" required></textarea>
+        <button id="run-button" type="submit" class="button">Generate</button>
       </div>
 
       <details class="advanced">
         <summary>Advanced settings</summary>
         <div class="grid">
+          <label class="create-only">Shape
+            <select id="aspect">
+              <option value="portrait">Portrait (book page)</option>
+              <option value="square">Square</option>
+              <option value="landscape">Landscape (scene)</option>
+            </select>
+          </label>
+          <label class="wide create-only">Avoid (negative prompt)
+            <input id="negative" type="text" />
+          </label>
+          <label class="opt-lora">Qwen style add-on (LoRA)
+            <select id="lora"></select>
+          </label>
+          <label class="check opt-rewrite">
+            <input id="rewrite-prompt" type="checkbox" /> Rewrite prompt (sends text to Alibaba's API; may refuse content and stall)
+          </label>
           <label>Seed
             <input id="seed" type="number" min="0" max="2147483647" step="1" value="0" />
           </label>
           <label class="check">
             <input id="randomize-seed" type="checkbox" checked /> Randomize seed
           </label>
-          <label>True guidance scale: <output id="guidance-out">4.0</output>
-            <input id="guidance" type="range" min="1" max="10" step="0.1" value="4" />
+          <label>Guidance: <output id="guidance-out"></output>
+            <input id="guidance" type="range" min="1" max="12" step="0.1" />
           </label>
-          <label>Inference steps: <output id="steps-out">50</output>
-            <input id="steps" type="range" min="1" max="50" step="1" value="50" />
-          </label>
-          <label class="check">
-            <input id="rewrite-prompt" type="checkbox" /> Rewrite prompt (sends your text to Alibaba's API to refine it; it may refuse some content and stall)
-          </label>
-          <label>Hugging Face Space
-            <input id="space-id" type="text" value="Qwen/Qwen-Image-Edit" />
+          <label>Steps: <output id="steps-out"></output>
+            <input id="steps" type="range" min="1" max="50" step="1" />
           </label>
           <label class="wide">Hugging Face token (optional)
             <input id="hf-token" type="password" placeholder="hf_…" />
             <small>
-              Free ZeroGPU quota is limited per visitor. Logged-in tokens get more.
+              Free GPU time is limited per visitor; a free Hugging Face account token raises it.
               The token stays in your browser and is sent only to Hugging Face.
               <label class="check inline"><input id="remember-token" type="checkbox" /> Remember on this device</label>
             </small>
@@ -91,16 +99,18 @@
   </main>
 
   <footer>
-    Powered by <a href="https://huggingface.co/spaces/Qwen/Qwen-Image-Edit" target="_blank" rel="noopener">Qwen/Qwen-Image-Edit</a>
-    on Hugging Face Spaces · Model licensed Apache-2.0 ·
-    <a href="https://github.com/QwenLM/Qwen-Image" target="_blank" rel="noopener">Qwen-Image on GitHub</a>
+    Runs on free community demos on Hugging Face Spaces:
+    <a href="https://huggingface.co/spaces/seawolf2357/REALVISXL-V5" target="_blank" rel="noopener">RealVisXL V5</a> ·
+    <a href="https://huggingface.co/spaces/IbarakiDouji/WAI-NSFW-illustrious-SDXL" target="_blank" rel="noopener">WAI Illustrious</a> ·
+    <a href="https://huggingface.co/spaces/prithivMLmods/Qwen-Image-Edit-2509-LoRAs-Fast" target="_blank" rel="noopener">Qwen Edit 2509 Fast</a> ·
+    <a href="https://huggingface.co/spaces/Qwen/Qwen-Image-Edit" target="_blank" rel="noopener">Qwen-Image-Edit</a>
   </footer>
 
   <script>
     // Fallback if app.js (or the Gradio library it loads) fails: never let the
     // form do a plain page reload, and tell the user what went wrong.
-    document.getElementById("edit-form").addEventListener("submit", function (e) {
-      if (!window.qwenAppReady) {
+    document.getElementById("gen-form").addEventListener("submit", function (e) {
+      if (!window.appReady) {
         e.preventDefault();
         var s = document.getElementById("status");
         s.className = "status error";
