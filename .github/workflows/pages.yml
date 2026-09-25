@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, claude/github-qwen-image-gen-0wx25d]
   workflow_dispatch:
 
 permissions:
