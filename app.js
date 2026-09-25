@@ -7,10 +7,17 @@ const TOKEN_KEY = "novel-illustrator:hf-token";
 const MAX_SEED = 2147483647;
 const TIMEOUT_MS = 5 * 60 * 1000;
 
-const QWEN_FAST_LORAS = [
+const QWEN_2509_LORAS = [
   "Edit-Skin", "Next-Scene", "Relight", "Multiple-Angles", "Multi-Angle-Lighting",
   "Light-Restoration", "Photo-to-Anime", "Dotted-Illustration", "Flat-Log",
   "Upscale-Image", "Upscale2K",
+];
+const QWEN_2511_LORAS = [
+  "Anything2Real", "Ultra-Realistic-Portrait", "Hyper-Realistic-Portrait", "Any-light",
+  "Light-Migration", "Style-Transfer", "Multiple-Angles", "Fal-Multiple-Angles",
+  "Studio-DeLight", "Cinematic-FlatLog", "Polaroid-Photo", "Unblur-Anything", "Upscaler",
+  "Photo-to-Anime", "Anime-V2", "Manga-Tone", "Noir-Comic-Book", "Pixar-Inspired-3D",
+  "Midnight-Noir-Eyes-Spotlight",
 ];
 
 const ENGINES = {
@@ -43,15 +50,35 @@ const ENGINES = {
       o.guidance, o.steps, "Euler a", "v17", o.size, false, 0.55, 1.5, true,
     ],
   },
+  qwen2511: {
+    mode: "edit",
+    label: "Qwen Edit 2511 Fast — 1 or 2 images (recommended)",
+    note: "Newest Qwen editor. Add a second image to bring a person, outfit or lighting from it into image 1 — refer to them as \"image 1\" and \"image 2\" in your prompt. The style add-on (Advanced settings) nudges the look; Anything2Real suits realistic scenes. This Space blocks prompts that put a real person into intimate content.",
+    space: "prithivMLmods/Qwen-Image-Edit-2511-LoRAs-Fast",
+    steps: 4, guidance: 1,
+    multi: true,
+    loras: QWEN_2511_LORAS,
+    endpoint: "/edit_image",
+    args: async (o) => ({
+      images_b64_json: JSON.stringify(await Promise.all(o.files.map((f) => fileToDataUrl(f, 1024)))),
+      prompt: o.prompt,
+      lora_adapter: o.lora,
+      seed: o.seed,
+      randomize_seed: o.randomize,
+      guidance_scale: o.guidance,
+      steps: o.steps,
+    }),
+  },
   qwenFast: {
     mode: "edit",
-    label: "Qwen Edit 2509 Fast — community (recommended)",
+    label: "Qwen Edit 2509 Fast — 1 image",
     note: "Qwen-Image-Edit 2509 with a fast 4-step model. The add-on (Advanced settings) nudges the style; Edit-Skin is the most neutral.",
     space: "prithivMLmods/Qwen-Image-Edit-2509-LoRAs-Fast",
     steps: 4, guidance: 1,
+    loras: QWEN_2509_LORAS,
     endpoint: "/edit_image",
     args: async (o) => ({
-      image_b64: await fileToDataUrl(o.file, 1024),
+      image_b64: await fileToDataUrl(o.files[0], 1024),
       prompt: o.prompt,
       lora_adapter: o.lora,
       seed: o.seed,
@@ -68,7 +95,7 @@ const ENGINES = {
     steps: 50, guidance: 4,
     endpoint: "/infer",
     args: (o) => [
-      handle_file(o.file), o.prompt, o.seed, o.randomize, o.guidance, o.steps, o.rewrite,
+      handle_file(o.files[0]), o.prompt, o.seed, o.randomize, o.guidance, o.steps, o.rewrite,
     ],
   },
 };
@@ -83,10 +110,7 @@ const form = $("gen-form");
 const tabs = [...document.querySelectorAll(".tab")];
 const engineSelect = $("engine");
 const engineNote = $("engine-note");
-const fileInput = $("image-input");
-const dropzone = $("dropzone");
-const inputPreview = $("input-preview");
-const dropzoneHint = $("dropzone-hint");
+const slots = [...document.querySelectorAll(".slot")];
 const promptInput = $("prompt");
 const runButton = $("run-button");
 const resultImage = $("result-image");
@@ -106,8 +130,9 @@ const tokenInput = $("hf-token");
 const rememberToken = $("remember-token");
 
 let mode = "create";
-let selectedFile = null;
-let inputPreviewUrl = null;
+// Input images by slot index (slot 0 = the scene, slot 1 = optional reference).
+const selectedFiles = [null, null];
+const previewUrls = [null, null];
 const clients = new Map();
 
 const randomSeed = () => Math.floor(Math.random() * MAX_SEED);
@@ -136,8 +161,6 @@ rememberToken.addEventListener("change", persistToken);
 tokenInput.addEventListener("change", persistToken);
 
 // ----- Mode + engine selection -----
-QWEN_FAST_LORAS.forEach((name) => loraSelect.add(new Option(name, name)));
-
 function currentEngine() {
   return ENGINES[engineSelect.value];
 }
@@ -148,7 +171,10 @@ function applyEngine() {
   steps.value = engine.steps;
   guidance.value = engine.guidance;
   negative.value = engine.negative || "";
-  document.querySelectorAll(".opt-lora").forEach((el) => (el.hidden = engineSelect.value !== "qwenFast"));
+  form.classList.toggle("multi", Boolean(engine.multi));
+  loraSelect.innerHTML = "";
+  (engine.loras || []).forEach((name) => loraSelect.add(new Option(name, name)));
+  document.querySelectorAll(".opt-lora").forEach((el) => (el.hidden = !engine.loras));
   document.querySelectorAll(".opt-rewrite").forEach((el) => (el.hidden = engineSelect.value !== "qwenOfficial"));
   syncOutputs();
 }
@@ -179,40 +205,60 @@ guidance.addEventListener("input", syncOutputs);
 steps.addEventListener("input", syncOutputs);
 
 // ----- Image selection: click, drag & drop, paste -----
-function setImage(file) {
-  if (!file || !file.type.startsWith("image/")) {
+function setImage(index, file) {
+  const slot = slots[index];
+  if (file && !file.type.startsWith("image/")) {
     setStatus("Please choose an image file.", true);
     return;
   }
-  selectedFile = file;
-  if (inputPreviewUrl) URL.revokeObjectURL(inputPreviewUrl);
-  inputPreviewUrl = URL.createObjectURL(file);
-  inputPreview.src = inputPreviewUrl;
-  inputPreview.hidden = false;
-  dropzoneHint.hidden = true;
+  selectedFiles[index] = file || null;
+  if (previewUrls[index]) URL.revokeObjectURL(previewUrls[index]);
+  previewUrls[index] = file ? URL.createObjectURL(file) : null;
+  const preview = slot.querySelector(".preview");
+  preview.src = previewUrls[index] || "";
+  preview.hidden = !file;
+  slot.querySelector(".hint").hidden = Boolean(file);
+  const clear = slot.querySelector(".clear-slot");
+  if (clear) clear.hidden = !file;
+  if (!file) slot.querySelector("input[type=file]").value = "";
   setStatus("");
 }
 
-fileInput.addEventListener("change", () => setImage(fileInput.files[0]));
-
-["dragenter", "dragover"].forEach((type) =>
-  dropzone.addEventListener(type, (e) => {
+slots.forEach((slot, index) => {
+  const input = slot.querySelector("input[type=file]");
+  const zone = slot.querySelector(".dropzone");
+  input.addEventListener("change", () => setImage(index, input.files[0]));
+  ["dragenter", "dragover"].forEach((type) =>
+    zone.addEventListener(type, (e) => {
+      e.preventDefault();
+      zone.classList.add("dragover");
+    })
+  );
+  ["dragleave", "drop"].forEach((type) =>
+    zone.addEventListener(type, () => zone.classList.remove("dragover"))
+  );
+  zone.addEventListener("drop", (e) => {
     e.preventDefault();
-    dropzone.classList.add("dragover");
-  })
-);
-["dragleave", "drop"].forEach((type) =>
-  dropzone.addEventListener(type, () => dropzone.classList.remove("dragover"))
-);
-dropzone.addEventListener("drop", (e) => {
-  e.preventDefault();
-  setImage(e.dataTransfer.files[0]);
+    setImage(index, e.dataTransfer.files[0]);
+  });
+  slot.querySelector(".clear-slot")?.addEventListener("click", () => setImage(index, null));
 });
 
+// Pasting fills image 1 first, then image 2 when the engine takes two.
 document.addEventListener("paste", (e) => {
   const item = [...(e.clipboardData?.items || [])].find((i) => i.type.startsWith("image/"));
-  if (item) setImage(item.getAsFile());
+  if (!item) return;
+  const index = selectedFiles[0] && currentEngine().multi ? 1 : 0;
+  setImage(index, item.getAsFile());
 });
+
+// ----- Example prompts -----
+document.querySelectorAll(".chip").forEach((chip) =>
+  chip.addEventListener("click", () => {
+    promptInput.value = chip.dataset.prompt || chip.textContent;
+    promptInput.focus();
+  })
+);
 
 // Downscale to keep uploads small (the Space resizes to ~1024px anyway).
 async function fileToDataUrl(file, maxDim) {
@@ -323,14 +369,15 @@ form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const engine = currentEngine();
   const prompt = promptInput.value.trim();
-  if (engine.mode === "edit" && !selectedFile) return setStatus("Add an input image first.", true);
+  const files = engine.multi ? selectedFiles.filter(Boolean) : [selectedFiles[0]].filter(Boolean);
+  if (engine.mode === "edit" && !selectedFiles[0]) return setStatus("Add image 1 first.", true);
   if (!prompt) return setStatus("Describe what you want.", true);
 
   const options = {
     prompt,
     negative: negative.value.trim(),
     size: engine.sizes?.[aspect.value],
-    file: selectedFile,
+    files,
     lora: loraSelect.value,
     rewrite: rewritePrompt.checked,
     seed: Number(seedInput.value) || 0,
@@ -367,6 +414,10 @@ form.addEventListener("submit", async (e) => {
         break;
       }
     }
+
+    // Some Spaces report a refusal as data rather than an error.
+    const payload = Array.isArray(result) ? result[0] : result;
+    if (payload?.status === "blocked") throw new Error(payload.message || "The Space's content filter blocked this prompt.");
 
     if (!result) {
       throw new Error(Date.now() - startedAt >= TIMEOUT_MS

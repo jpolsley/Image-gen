@@ -257,3 +257,21 @@ form[data-mode="create"] .edit-only,
 form[data-mode="edit"] .create-only { display: none !important; }
 form[data-mode="create"] .panes { grid-template-columns: 1fr; }
 form[data-mode="create"] .result-pane { max-width: 560px; width: 100%; margin: 0 auto; }
+
+/* ----- Multi-image input slots ----- */
+.slots { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.slot { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.slot-label { font-size: 0.8rem; color: var(--muted); }
+.slots .dropzone { font-size: 0.85rem; }
+form:not(.multi) .multi-only { display: none !important; }
+form:not(.multi) .slots { grid-template-columns: 1fr; }
+.link {
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  align-self: flex-start;
+}

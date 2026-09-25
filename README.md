@@ -11,6 +11,7 @@ no server, no API keys.
 |--------|--------|-------|----------|
 | Create | RealVisXL V5 | [seawolf2357/REALVISXL-V5](https://huggingface.co/spaces/seawolf2357/REALVISXL-V5) | Realistic / cinematic scenes |
 | Create | WAI Illustrious | [IbarakiDouji/WAI-NSFW-illustrious-SDXL](https://huggingface.co/spaces/IbarakiDouji/WAI-NSFW-illustrious-SDXL) | Painterly / anime illustration |
+| Edit   | Qwen Edit 2511 Fast | [prithivMLmods/Qwen-Image-Edit-2511-LoRAs-Fast](https://huggingface.co/spaces/prithivMLmods/Qwen-Image-Edit-2511-LoRAs-Fast) | One or two images: e.g. put the person from image 2 into the scene of image 1 |
 | Edit   | Qwen Edit 2509 Fast | [prithivMLmods/Qwen-Image-Edit-2509-LoRAs-Fast](https://huggingface.co/spaces/prithivMLmods/Qwen-Image-Edit-2509-LoRAs-Fast) | Changing an existing image (4-step, fast) |
 | Edit   | Qwen-Image-Edit (official) | [Qwen/Qwen-Image-Edit](https://huggingface.co/spaces/Qwen/Qwen-Image-Edit) | Same, when the official demo is up |
 

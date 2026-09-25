@@ -29,11 +29,25 @@
       <div class="panes">
         <section class="pane edit-only">
           <h2>Input</h2>
-          <label id="dropzone" class="dropzone" for="image-input">
-            <img id="input-preview" alt="" hidden />
-            <span id="dropzone-hint">Drop an image here, paste one, or click to choose</span>
-          </label>
-          <input id="image-input" type="file" accept="image/*" hidden />
+          <div class="slots">
+            <div class="slot" data-slot="0">
+              <span class="slot-label">Image 1 — the scene</span>
+              <label class="dropzone" for="image-input-0">
+                <img class="preview" alt="" hidden />
+                <span class="hint">Drop, paste, or click to choose</span>
+              </label>
+              <input id="image-input-0" type="file" accept="image/*" hidden />
+            </div>
+            <div class="slot multi-only" data-slot="1">
+              <span class="slot-label">Image 2 — person (optional)</span>
+              <label class="dropzone" for="image-input-1">
+                <img class="preview" alt="" hidden />
+                <span class="hint">Drop or click to choose</span>
+              </label>
+              <input id="image-input-1" type="file" accept="image/*" hidden />
+              <button type="button" class="clear-slot link" hidden>Remove</button>
+            </div>
+          </div>
         </section>
 
         <section class="pane result-pane">
@@ -45,6 +59,13 @@
           </div>
           <a id="download-link" class="button secondary" download="illustration.png" target="_blank" rel="noopener" hidden>Open / download</a>
         </section>
+      </div>
+
+      <div class="examples multi-only edit-only">
+        <span>Try:</span>
+        <button type="button" class="chip" data-prompt="Replace the person in image 1 with the person from image 2. Keep image 2's face, hair, skin tone and body type. Keep image 1's pose, clothing, background, lighting and camera angle.">Put person 2 into scene 1</button>
+        <button type="button" class="chip" data-prompt="Put the person from image 2 into image 1's scene, wearing the same outfit as the person in image 1, in the same pose. Keep image 2's face and features.">Same outfit &amp; pose</button>
+        <button type="button" class="chip" data-prompt="Relight image 1 using the lighting and color tone of image 2.">Match lighting of image 2</button>
       </div>
 
       <div class="prompt-block">
@@ -102,6 +123,7 @@
     Runs on free community demos on Hugging Face Spaces:
     <a href="https://huggingface.co/spaces/seawolf2357/REALVISXL-V5" target="_blank" rel="noopener">RealVisXL V5</a> ·
     <a href="https://huggingface.co/spaces/IbarakiDouji/WAI-NSFW-illustrious-SDXL" target="_blank" rel="noopener">WAI Illustrious</a> ·
+    <a href="https://huggingface.co/spaces/prithivMLmods/Qwen-Image-Edit-2511-LoRAs-Fast" target="_blank" rel="noopener">Qwen Edit 2511 Fast</a> ·
     <a href="https://huggingface.co/spaces/prithivMLmods/Qwen-Image-Edit-2509-LoRAs-Fast" target="_blank" rel="noopener">Qwen Edit 2509 Fast</a> ·
     <a href="https://huggingface.co/spaces/Qwen/Qwen-Image-Edit" target="_blank" rel="noopener">Qwen-Image-Edit</a>
   </footer>
