@@ -311,7 +311,11 @@ async function getClient(space) {
   const token = tokenInput.value.trim();
   const key = `${space}|${token}`;
   if (!clients.has(key)) {
-    const options = token ? { token, hf_token: token } : {};
+    // Without "status" the client silently drops the Space's error messages
+    // (quota, content filter, crashes). with_null_state returns outputs exactly
+    // as the server sent them instead of re-mapping them onto UI components.
+    const options = { events: ["data", "status"], with_null_state: true };
+    if (token) options.token = token;
     clients.set(key, Client.connect(space, options).catch((err) => {
       clients.delete(key);
       throw err;
@@ -422,7 +426,7 @@ form.addEventListener("submit", async (e) => {
     if (!result) {
       throw new Error(Date.now() - startedAt >= TIMEOUT_MS
         ? "Timed out after 5 minutes. The Space may be overloaded; try another engine."
-        : "The Space finished without returning an image. Try again, or change the prompt.");
+        : "The Space finished without returning an image or an error message. It may be restarting — try again in a minute, or try another engine.");
     }
     const url = findImageUrl(result);
     if (!url) throw new Error("The Space returned an unexpected response.");
