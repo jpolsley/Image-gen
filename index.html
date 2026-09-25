@@ -70,7 +70,7 @@
             <input id="steps" type="range" min="1" max="50" step="1" value="50" />
           </label>
           <label class="check">
-            <input id="rewrite-prompt" type="checkbox" checked /> Rewrite prompt (let Qwen refine your instruction)
+            <input id="rewrite-prompt" type="checkbox" /> Rewrite prompt (sends your text to Alibaba's API to refine it; it may refuse some content and stall)
           </label>
           <label>Hugging Face Space
             <input id="space-id" type="text" value="Qwen/Qwen-Image-Edit" />
@@ -96,6 +96,18 @@
     <a href="https://github.com/QwenLM/Qwen-Image" target="_blank" rel="noopener">Qwen-Image on GitHub</a>
   </footer>
 
+  <script>
+    // Fallback if app.js (or the Gradio library it loads) fails: never let the
+    // form do a plain page reload, and tell the user what went wrong.
+    document.getElementById("edit-form").addEventListener("submit", function (e) {
+      if (!window.qwenAppReady) {
+        e.preventDefault();
+        var s = document.getElementById("status");
+        s.className = "status error";
+        s.textContent = "The page's script hasn't loaded (the Gradio library from cdn.jsdelivr.net may be blocked on this network). Try reloading, or another network/browser.";
+      }
+    });
+  </script>
   <script type="module" src="app.js"></script>
 </body>
 </html>

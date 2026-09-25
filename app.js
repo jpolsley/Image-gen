@@ -148,6 +148,26 @@ function describeError(err) {
   return msg;
 }
 
+// Live elapsed-time readout so a long ZeroGPU run doesn't look frozen.
+let timer = null;
+let startedAt = 0;
+let progressText = "";
+function setProgress(message) {
+  progressText = message;
+  const secs = Math.round((Date.now() - startedAt) / 1000);
+  setStatus(`${progressText} (${secs}s)`);
+}
+function startTimer() {
+  startedAt = Date.now();
+  timer = setInterval(() => setProgress(progressText), 1000);
+}
+function stopTimer() {
+  clearInterval(timer);
+  timer = null;
+}
+
+const TIMEOUT_MS = 5 * 60 * 1000;
+
 // ----- Submit -----
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -156,11 +176,15 @@ form.addEventListener("submit", async (e) => {
   if (!prompt) return setStatus("Describe the edit you want.", true);
 
   setBusy(true);
-  setStatus("Connecting to Hugging Face Space…");
+  startTimer();
+  setProgress("Connecting to Hugging Face Space…");
+  let job = null;
+  const timeout = setTimeout(() => job?.cancel(), TIMEOUT_MS);
 
   try {
     const app = await getClient();
-    const job = app.submit("/infer", {
+    setProgress("Uploading image…");
+    job = app.submit("/infer", {
       image: handle_file(selectedFile),
       prompt,
       seed: Number(seedInput.value) || 0,
@@ -175,12 +199,12 @@ form.addEventListener("submit", async (e) => {
       if (msg.type === "status") {
         if (msg.stage === "error") throw new Error(msg.message || "The Space returned an error.");
         if (msg.queue && msg.position != null && msg.position > 0) {
-          setStatus(`Queued — position ${msg.position + 1}${msg.queue_size ? ` of ${msg.queue_size}` : ""}…`);
+          setProgress(`Queued — position ${msg.position + 1}${msg.queue_size ? ` of ${msg.queue_size}` : ""}…`);
         } else if (msg.progress_data?.length) {
           const p = msg.progress_data[0];
-          if (p.index != null && p.length) setStatus(`Generating… step ${p.index} / ${p.length}`);
+          if (p.index != null && p.length) setProgress(`Generating… step ${p.index} / ${p.length}`);
         } else if (msg.stage === "pending") {
-          setStatus("Generating… this usually takes 30–90 seconds.");
+          setProgress("Waiting for a GPU and generating… usually 30–120 seconds");
         }
       } else if (msg.type === "data") {
         result = msg.data;
@@ -188,7 +212,11 @@ form.addEventListener("submit", async (e) => {
       }
     }
 
-    if (!result) throw new Error("No result was returned.");
+    if (!result) {
+      throw new Error(Date.now() - startedAt >= TIMEOUT_MS
+        ? "Timed out after 5 minutes. The Space may be overloaded; try again later."
+        : "The Space finished without returning an image. Try again, or change the prompt.");
+    }
     const [image, seed] = result;
     const url = image?.url || (typeof image === "string" ? image : null);
     if (!url) throw new Error("The Space returned an unexpected response.");
@@ -204,7 +232,12 @@ form.addEventListener("submit", async (e) => {
     resultHint.hidden = !resultImage.hidden;
     setStatus(describeError(err), true);
   } finally {
+    clearTimeout(timeout);
+    stopTimer();
     setBusy(false);
     if (resultImage.hidden) resultHint.hidden = false;
   }
 });
+
+// Tells the inline fallback in index.html that this module loaded.
+window.qwenAppReady = true;
