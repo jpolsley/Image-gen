@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Qwen Image Edit</title>
+  <meta name="description" content="Edit images with natural-language instructions using Qwen-Image-Edit, running on Hugging Face Spaces." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1>Qwen Image Edit</h1>
+    <p class="tagline">
+      Upload an image, describe the change, and let
+      <a href="https://huggingface.co/Qwen/Qwen-Image-Edit" target="_blank" rel="noopener">Qwen-Image-Edit</a>
+      do the rest.
+    </p>
+  </header>
+
+  <main>
+    <form id="edit-form" class="card" autocomplete="off">
+      <div class="panes">
+        <section class="pane">
+          <h2>Input</h2>
+          <label id="dropzone" class="dropzone" for="image-input">
+            <img id="input-preview" alt="" hidden />
+            <span id="dropzone-hint">Drop an image here, paste one, or click to choose</span>
+          </label>
+          <input id="image-input" type="file" accept="image/*" hidden />
+        </section>
+
+        <section class="pane">
+          <h2>Result</h2>
+          <div id="result-box" class="result">
+            <img id="result-image" alt="Edited image" hidden />
+            <div id="spinner" class="spinner" hidden></div>
+            <span id="result-hint">Your edited image will appear here</span>
+          </div>
+          <a id="download-link" class="button secondary" download="qwen-edit.png" target="_blank" rel="noopener" hidden>Download</a>
+        </section>
+      </div>
+
+      <div class="prompt-row">
+        <input id="prompt" type="text" required
+          placeholder="Describe the edit, e.g. “turn the style into a vintage comic book”" />
+        <button id="run-button" type="submit" class="button">Edit!</button>
+      </div>
+
+      <div class="examples">
+        <span>Try:</span>
+        <button type="button" class="chip">Change the background to a snowy mountain at sunset</button>
+        <button type="button" class="chip">Turn the style into Studio Ghibli animation</button>
+        <button type="button" class="chip">Add a sign that reads “Hello Qwen” in blue crayon</button>
+        <button type="button" class="chip">Rotate the object 180 degrees to show its back</button>
+      </div>
+
+      <details class="advanced">
+        <summary>Advanced settings</summary>
+        <div class="grid">
+          <label>Seed
+            <input id="seed" type="number" min="0" max="2147483647" step="1" value="0" />
+          </label>
+          <label class="check">
+            <input id="randomize-seed" type="checkbox" checked /> Randomize seed
+          </label>
+          <label>True guidance scale: <output id="guidance-out">4.0</output>
+            <input id="guidance" type="range" min="1" max="10" step="0.1" value="4" />
+          </label>
+          <label>Inference steps: <output id="steps-out">50</output>
+            <input id="steps" type="range" min="1" max="50" step="1" value="50" />
+          </label>
+          <label class="check">
+            <input id="rewrite-prompt" type="checkbox" checked /> Rewrite prompt (let Qwen refine your instruction)
+          </label>
+          <label>Hugging Face Space
+            <input id="space-id" type="text" value="Qwen/Qwen-Image-Edit" />
+          </label>
+          <label class="wide">Hugging Face token (optional)
+            <input id="hf-token" type="password" placeholder="hf_…" />
+            <small>
+              Free ZeroGPU quota is limited per visitor. Logged-in tokens get more.
+              The token stays in your browser and is sent only to Hugging Face.
+              <label class="check inline"><input id="remember-token" type="checkbox" /> Remember on this device</label>
+            </small>
+          </label>
+        </div>
+      </details>
+
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </form>
+  </main>
+
+  <footer>
+    Powered by <a href="https://huggingface.co/spaces/Qwen/Qwen-Image-Edit" target="_blank" rel="noopener">Qwen/Qwen-Image-Edit</a>
+    on Hugging Face Spaces · Model licensed Apache-2.0 ·
+    <a href="https://github.com/QwenLM/Qwen-Image" target="_blank" rel="noopener">Qwen-Image on GitHub</a>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

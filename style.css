@@ -1,0 +1,194 @@
+:root {
+  --bg: #f6f5fb;
+  --card: #ffffff;
+  --text: #1d1b26;
+  --muted: #6b6880;
+  --border: #dcd9e8;
+  --accent: #6d4aff;
+  --accent-text: #ffffff;
+  --error: #c62828;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14131a;
+    --card: #1e1c27;
+    --text: #ecebf3;
+    --muted: #a09db3;
+    --border: #34313f;
+    --accent: #9b85ff;
+    --accent-text: #14131a;
+    --error: #ff8a80;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+a { color: var(--accent); }
+
+.site-header, main, footer {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.site-header { padding-top: 32px; text-align: center; }
+.site-header h1 { margin: 0 0 4px; font-size: 2rem; }
+.tagline { margin: 0 0 24px; color: var(--muted); }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.panes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 720px) {
+  .panes { grid-template-columns: 1fr; }
+}
+
+.pane h2 {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.dropzone, .result {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  text-align: center;
+  color: var(--muted);
+  padding: 12px;
+}
+.dropzone { cursor: pointer; transition: border-color 0.15s; }
+.dropzone:hover, .dropzone.dragover { border-color: var(--accent); }
+.result { border-style: solid; }
+
+.dropzone img, .result img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.prompt-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.prompt-row input { flex: 1; min-width: 0; }
+
+input[type="text"], input[type="password"], input[type="number"] {
+  font: inherit;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  width: 100%;
+}
+input:focus-visible, button:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.button {
+  font: inherit;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 22px;
+  background: var(--accent);
+  color: var(--accent-text);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+.button:disabled { opacity: 0.55; cursor: progress; }
+.button.secondary {
+  margin-top: 10px;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.chip {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+.chip:hover { border-color: var(--accent); }
+
+.advanced { margin-top: 20px; }
+.advanced summary { cursor: pointer; color: var(--muted); }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+.grid label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+.grid label.check, label.check.inline { flex-direction: row; align-items: center; gap: 8px; }
+.grid .wide { grid-column: 1 / -1; }
+.grid small { color: var(--muted); }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+input[type="checkbox"] { accent-color: var(--accent); }
+
+.status { min-height: 1.5em; margin: 16px 0 0; color: var(--muted); }
+.status.error { color: var(--error); }
+
+.spinner {
+  width: 44px;
+  height: 44px;
+  border: 4px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding-top: 24px;
+  padding-bottom: 32px;
+}
+
+[hidden] { display: none !important; }
