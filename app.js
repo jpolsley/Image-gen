@@ -53,7 +53,7 @@ const ENGINES = {
   qwen2511: {
     mode: "edit",
     label: "Qwen Edit 2511 Fast — 1 or 2 images (recommended)",
-    note: "Newest Qwen editor. Add a second image to bring a person, outfit or lighting from it into image 1 — refer to them as \"image 1\" and \"image 2\" in your prompt. The style add-on (Advanced settings) nudges the look; Anything2Real suits realistic scenes. This Space blocks prompts that put a real person into intimate content.",
+    note: "Newest Qwen editor. Add a second picture to bring a person, outfit or lighting from it into Picture 1 — call them \"Picture 1\" and \"Picture 2\" in your prompt (that is how the model labels them), and say which one is the scene. The style add-on (Advanced settings) nudges the look; Anything2Real suits realistic scenes. This Space blocks prompts that put a real person into intimate content.",
     space: "prithivMLmods/Qwen-Image-Edit-2511-LoRAs-Fast",
     steps: 4, guidance: 1,
     multi: true,
@@ -374,7 +374,7 @@ form.addEventListener("submit", async (e) => {
   const engine = currentEngine();
   const prompt = promptInput.value.trim();
   const files = engine.multi ? selectedFiles.filter(Boolean) : [selectedFiles[0]].filter(Boolean);
-  if (engine.mode === "edit" && !selectedFiles[0]) return setStatus("Add image 1 first.", true);
+  if (engine.mode === "edit" && !selectedFiles[0]) return setStatus("Add Picture 1 first.", true);
   if (!prompt) return setStatus("Describe what you want.", true);
 
   const options = {
