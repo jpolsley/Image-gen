@@ -19,7 +19,11 @@ mkdir -p "$TOOLS"
 export UV_INSTALL_DIR="$TOOLS"
 export INSTALLER_NO_MODIFY_PATH=1
 export UV_PYTHON_INSTALL_DIR="$TOOLS/python"
-export UV_CACHE_DIR="$TOOLS/cache"
+# The download cache is disposable and thousands of small files; keep it in
+# the Mac's temp folder so the external drive only receives the final install.
+export UV_CACHE_DIR="${TMPDIR:-/tmp}/aikit-uv-cache"
+# Copy files instead of hard-linking them from the cache (different disks).
+export UV_LINK_MODE=copy
 
 echo "==> Installing uv (Python manager) onto the drive"
 if [ ! -x "$TOOLS/uv" ]; then
@@ -59,6 +63,8 @@ cd /Volumes/AIKIT/ComfyUI || { echo "AIKIT is not mounted. Double-click AIKit.sp
 exec ./.venv/bin/python main.py --port 1234 --auto-launch
 START
 chmod +x "$ROOT/Start ComfyUI.command"
+
+rm -rf "$UV_CACHE_DIR"
 
 echo
 echo "All set. Put models in:     $ROOT/ComfyUI/models/checkpoints/"
