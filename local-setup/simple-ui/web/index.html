@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Novel Illustrator (Local)</title>
+<style>
+  :root {
+    --bg: #f6f5fb; --card: #fff; --text: #1d1b26; --muted: #6b6880;
+    --border: #dcd9e8; --accent: #6d4aff; --accent-text: #fff; --error: #c62828; --ok: #2e7d32;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #14131a; --card: #1e1c27; --text: #ecebf3; --muted: #a09db3;
+            --border: #34313f; --accent: #9b85ff; --accent-text: #14131a; --error: #ff8a80; --ok: #81c784; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+  header, main { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+  header { padding-top: 28px; text-align: center; }
+  h1 { margin: 0 0 4px; font-size: 1.8rem; }
+  .tagline { margin: 0 0 20px; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+  .tabs { display: flex; gap: 4px; padding: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 18px; }
+  .tab { flex: 1; font: inherit; font-weight: 600; color: var(--muted); background: transparent; border: 0; border-radius: 9px; padding: 9px 10px; cursor: pointer; }
+  .tab[aria-selected="true"] { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgb(0 0 0 / .12); }
+  .panes { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 720px) { .panes { grid-template-columns: 1fr; } }
+  h2 { margin: 0 0 8px; font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .slots { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .slot { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .slot-label { font-size: .8rem; color: var(--muted); }
+  .drop, .result { position: relative; display: flex; align-items: center; justify-content: center; aspect-ratio: 1/1;
+    border: 2px dashed var(--border); border-radius: 12px; overflow: hidden; color: var(--muted); text-align: center; padding: 10px; cursor: pointer; font-size: .9rem; }
+  .drop:hover, .drop.over { border-color: var(--accent); }
+  .result { border-style: solid; cursor: default; }
+  .drop img, .result img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+  form[data-mode="create"] .inputs { display: none; }
+  form[data-mode="create"] .panes { grid-template-columns: 1fr; }
+  form[data-mode="create"] .result-pane { max-width: 560px; width: 100%; margin: 0 auto; }
+  form:not([data-mode="scene"]) .slot.second { display: none; }
+  form:not([data-mode="scene"]) .slots { grid-template-columns: 1fr; }
+  textarea, select { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; width: 100%; }
+  textarea { resize: vertical; min-height: 84px; }
+  .row { display: flex; gap: 10px; margin-top: 16px; align-items: stretch; }
+  .row textarea { flex: 1; }
+  @media (max-width: 560px) { .row { flex-direction: column; } }
+  .btn { font: inherit; font-weight: 700; border: 0; border-radius: 10px; padding: 10px 24px; background: var(--accent); color: var(--accent-text); cursor: pointer; }
+  .btn:disabled { opacity: .55; cursor: progress; }
+  .btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); font-weight: 600; padding: 8px 16px; }
+  .options { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; align-items: center; font-size: .9rem; color: var(--muted); }
+  .options select { width: auto; padding: 6px 10px; }
+  .status { min-height: 1.5em; margin: 14px 0 0; color: var(--muted); }
+  .status.error { color: var(--error); } .status.ok { color: var(--ok); }
+  .bar { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; margin-top: 8px; }
+  .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+  .spinner { width: 42px; height: 42px; border: 4px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .result-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-top: 10px; }
+  .gallery img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; }
+  footer { max-width: 1040px; margin: 0 auto; padding: 18px 16px 28px; text-align: center; color: var(--muted); font-size: .85rem; }
+  a { color: var(--accent); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Novel Illustrator</h1>
+  <p class="tagline">Running on your own computer, from your drive. Nothing leaves this machine.</p>
+</header>
+<main>
+  <form id="form" class="card" data-mode="edit" autocomplete="off">
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" data-mode="edit" aria-selected="true">Edit a picture</button>
+      <button type="button" class="tab" data-mode="scene" aria-selected="false">Put a character in a scene</button>
+      <button type="button" class="tab" data-mode="create" aria-selected="false">Create from a description</button>
+    </div>
+
+    <div class="panes">
+      <section class="inputs">
+        <h2>Your pictures</h2>
+        <div class="slots">
+          <div class="slot" data-slot="0">
+            <span class="slot-label" id="label0">Picture to edit</span>
+            <label class="drop"><span class="hint">Click, drop or paste a picture</span><img hidden alt="" /><input type="file" accept="image/*" hidden /></label>
+          </div>
+          <div class="slot second" data-slot="1">
+            <span class="slot-label">Picture 2: your character</span>
+            <label class="drop"><span class="hint">Click or drop your character's picture</span><img hidden alt="" /><input type="file" accept="image/*" hidden /></label>
+          </div>
+        </div>
+      </section>
+      <section class="result-pane">
+        <h2>Result</h2>
+        <div class="result" id="result"><span id="resultHint">Your image will appear here</span><div class="spinner" id="spinner" hidden></div><img id="resultImg" hidden alt="Result" /></div>
+        <div class="result-actions" id="resultActions" hidden>
+          <a class="btn ghost" id="openBtn" target="_blank" rel="noopener">Open full size</a>
+          <button type="button" class="btn ghost" id="reuseBtn">Edit this result next</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="row">
+      <textarea id="prompt" required></textarea>
+      <button id="go" type="submit" class="btn">Make it</button>
+    </div>
+    <div class="options">
+      <label>Size
+        <select id="size">
+          <option value="512" selected>Small (fastest, best for 16 GB)</option>
+          <option value="768">Medium</option>
+          <option value="1024">Large (slow, needs more memory)</option>
+        </select>
+      </label>
+      <label>Model <select id="model"></select></label>
+    </div>
+    <div class="bar" id="bar" hidden><div></div></div>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+  </form>
+
+  <section class="card" style="margin-top:16px">
+    <h2>Recent images</h2>
+    <div class="gallery" id="gallery"></div>
+    <p class="status" id="galleryHint">Images you make appear here. They're saved on your drive in ComfyUI/output.</p>
+  </section>
+</main>
+<footer>
+  Powered by ComfyUI on your drive · <a href="/">Advanced (boxes &amp; wires)</a>
+</footer>
+
+<script>
+(() => {
+  const TEXT_ENCODER = "qwen_2.5_vl_7b_fp8_scaled.safetensors";
+  const VAE = "qwen_image_vae.safetensors";
+  const PLACEHOLDERS = {
+    edit: "Describe the change, e.g. “change the background to a candle-lit library at night; keep her face, hair and pose”",
+    scene: "Picture 1 is the scene, Picture 2 is your character. The default below works for most swaps — add any extra detail.",
+    create: "Describe the scene, e.g. “an adult woman in her 30s reading by a rainy window, warm lamp light, film photo”",
+  };
+  const SCENE_DEFAULT = "Use Picture 1 as the scene: keep its background, lighting, camera angle, pose and clothing. Replace the person in Picture 1 with the person from Picture 2, keeping Picture 2's face, hair, skin tone and body type.";
+
+  const $ = (id) => document.getElementById(id);
+  const form = $("form"), promptEl = $("prompt"), go = $("go"), statusEl = $("status");
+  const bar = $("bar"), barFill = bar.firstElementChild, spinner = $("spinner");
+  const resultImg = $("resultImg"), resultHint = $("resultHint"), actions = $("resultActions");
+  const tabs = [...document.querySelectorAll(".tab")];
+  const slots = [...document.querySelectorAll(".slot")];
+  const files = [null, null];
+  const dims = [null, null];
+  let mode = "edit", lastResult = null, busy = false;
+  const clientId = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
+
+  function setStatus(msg, kind) { statusEl.textContent = msg; statusEl.className = "status" + (kind ? " " + kind : ""); }
+
+  // ----- Modes -----
+  // Each tab keeps its own prompt; the scene tab starts with a ready-made one.
+  const prompts = { edit: "", scene: SCENE_DEFAULT, create: "" };
+  function setMode(m) {
+    prompts[mode] = promptEl.value;
+    mode = m; form.dataset.mode = m;
+    tabs.forEach((t) => t.setAttribute("aria-selected", String(t.dataset.mode === m)));
+    $("label0").textContent = m === "scene" ? "Picture 1: the scene" : "Picture to edit";
+    promptEl.placeholder = PLACEHOLDERS[m];
+    promptEl.value = prompts[m];
+    setStatus("");
+  }
+  tabs.forEach((t) => t.addEventListener("click", () => !busy && setMode(t.dataset.mode)));
+
+  // ----- Picture slots -----
+  function setFile(i, file) {
+    if (!file || !file.type.startsWith("image/")) return;
+    files[i] = file;
+    const img = slots[i].querySelector("img");
+    const url = URL.createObjectURL(file);
+    img.onload = () => { dims[i] = [img.naturalWidth, img.naturalHeight]; };
+    img.src = url; img.hidden = false;
+    slots[i].querySelector(".hint").hidden = true;
+  }
+  slots.forEach((slot, i) => {
+    const input = slot.querySelector("input"), drop = slot.querySelector(".drop");
+    input.addEventListener("change", () => setFile(i, input.files[0]));
+    drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+    drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+    drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("over"); setFile(i, e.dataTransfer.files[0]); });
+  });
+  document.addEventListener("paste", (e) => {
+    const item = [...(e.clipboardData?.items || [])].find((x) => x.type.startsWith("image/"));
+    if (item) setFile(mode === "scene" && files[0] ? 1 : 0, item.getAsFile());
+  });
+
+  // ----- Models on the drive -----
+  async function loadModels() {
+    const sel = $("model");
+    try {
+      const r = await fetch("/object_info/UnetLoaderGGUF");
+      const info = await r.json();
+      const names = info.UnetLoaderGGUF.input.required.unet_name[0];
+      names.forEach((n) => sel.add(new Option(n.replace(/\.gguf$/, ""), n)));
+      const pref = names.find((n) => /Q3/i.test(n)) || names[0];
+      if (pref) sel.value = pref;
+      if (!names.length) setStatus("No compressed model found on the drive. Run add-lite-qwen.sh first.", "error");
+    } catch {
+      setStatus("Couldn't read the models list. Is the GGUF add-on installed? (add-lite-qwen.sh)", "error");
+    }
+  }
+
+  // ----- Sizing: follow Picture 1's shape, capped at the chosen size -----
+  function outputSize() {
+    const max = Number($("size").value);
+    let [w, h] = (mode !== "create" && dims[0]) ? dims[0] : [max, max];
+    const s = max / Math.max(w, h);
+    const r16 = (v) => Math.max(256, Math.round((v * s) / 16) * 16);
+    return [r16(w), r16(h)];
+  }
+
+  // ----- ComfyUI API -----
+  async function upload(file) {
+    const fd = new FormData();
+    fd.append("image", file, file.name || "picture.png");
+    fd.append("overwrite", "true");
+    const r = await fetch("/upload/image", { method: "POST", body: fd });
+    if (!r.ok) throw new Error("Upload failed (" + r.status + ")");
+    const j = await r.json();
+    return j.subfolder ? j.subfolder + "/" + j.name : j.name;
+  }
+
+  function buildGraph(imageNames, text, w, h) {
+    const g = {
+      "10": { class_type: "UnetLoaderGGUF", inputs: { unet_name: $("model").value } },
+      "11": { class_type: "CLIPLoader", inputs: { clip_name: TEXT_ENCODER, type: "qwen_image", device: "default" } },
+      "12": { class_type: "VAELoader", inputs: { vae_name: VAE } },
+      "3": { class_type: "TextEncodeQwenImageEditPlus", inputs: { clip: ["11", 0], vae: ["12", 0], prompt: text } },
+      "4": { class_type: "TextEncodeQwenImageEditPlus", inputs: { clip: ["11", 0], vae: ["12", 0], prompt: "" } },
+      "9": { class_type: "EmptyLatentImage", inputs: { width: w, height: h, batch_size: 1 } },
+      "2": { class_type: "KSampler", inputs: { model: ["10", 0], positive: ["3", 0], negative: ["4", 0], latent_image: ["9", 0],
+             seed: Math.floor(Math.random() * 2 ** 31), steps: 4, cfg: 1, sampler_name: "sa_solver", scheduler: "beta", denoise: 1 } },
+      "5": { class_type: "VAEDecode", inputs: { samples: ["2", 0], vae: ["12", 0] } },
+      "6": { class_type: "SaveImage", inputs: { images: ["5", 0], filename_prefix: "novel" } },
+    };
+    imageNames.forEach((name, i) => {
+      g["7" + i] = { class_type: "LoadImage", inputs: { image: name } };
+      g["3"].inputs["image" + (i + 1)] = ["7" + i, 0];
+    });
+    return g;
+  }
+
+  function viewUrl(img) {
+    return "/view?" + new URLSearchParams({ filename: img.filename, subfolder: img.subfolder || "", type: img.type || "output" });
+  }
+
+  function listenProgress(promptId) {
+    let ws;
+    try { ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws?clientId=" + clientId); }
+    catch { return () => {}; }
+    ws.onmessage = (ev) => {
+      if (typeof ev.data !== "string") return;
+      let m; try { m = JSON.parse(ev.data); } catch { return; }
+      if (m.data?.prompt_id && m.data.prompt_id !== promptId) return;
+      if (m.type === "progress" && m.data.max) {
+        barFill.style.width = Math.round((m.data.value / m.data.max) * 100) + "%";
+        setStatus("Making your image… step " + m.data.value + " of " + m.data.max);
+      } else if (m.type === "executing" && m.data.node) {
+        const labels = { "10": "Loading the model from your drive (slow the first time)…", "11": "Loading the text reader…",
+                         "3": "Reading your pictures and prompt…", "2": "Making your image…", "5": "Finishing up…" };
+        if (labels[m.data.node]) setStatus(labels[m.data.node]);
+      }
+    };
+    return () => { try { ws.close(); } catch {} };
+  }
+
+  async function waitForResult(promptId) {
+    for (;;) {
+      await new Promise((r) => setTimeout(r, 2000));
+      let h;
+      try { h = await (await fetch("/history/" + promptId)).json(); }
+      catch { throw new Error("Lost connection to ComfyUI. If the Terminal says “Killed: 9”, it ran out of memory — try the Small size and close other apps."); }
+      const entry = h[promptId];
+      if (!entry) continue;
+      const st = entry.status || {};
+      if (st.status_str === "error") {
+        const err = (st.messages || []).find((x) => x[0] === "execution_error");
+        throw new Error(err ? err[1].exception_message : "ComfyUI reported an error.");
+      }
+      const imgs = Object.values(entry.outputs || {}).flatMap((o) => o.images || []);
+      if (imgs.length) return imgs[0];
+      if (st.completed) throw new Error("Finished without an image.");
+    }
+  }
+
+  // ----- Submit -----
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = promptEl.value.trim();
+    if (!text) return setStatus("Type what you want first.", "error");
+    if (mode !== "create" && !files[0]) return setStatus("Add a picture first.", "error");
+    if (mode === "scene" && !files[1]) return setStatus("Add your character's picture as Picture 2.", "error");
+
+    busy = true; go.disabled = true; go.textContent = "Working…";
+    spinner.hidden = false; resultHint.hidden = true; resultImg.hidden = true; actions.hidden = true;
+    bar.hidden = false; barFill.style.width = "0%";
+    let stop = () => {};
+    const started = Date.now();
+    try {
+      setStatus("Uploading your pictures…");
+      const want = mode === "create" ? [] : (mode === "scene" ? [files[0], files[1]] : [files[0]]);
+      const names = [];
+      for (const f of want) names.push(await upload(f));
+      const [w, h] = outputSize();
+      const r = await fetch("/prompt", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: buildGraph(names, text, w, h), client_id: clientId }) });
+      const j = await r.json();
+      if (!r.ok || !j.prompt_id) {
+        const detail = j.error?.message || JSON.stringify(j.node_errors || j).slice(0, 300);
+        throw new Error("ComfyUI didn't accept the job: " + detail);
+      }
+      stop = listenProgress(j.prompt_id);
+      setStatus("Queued. Loading the model can take a few minutes the first time…");
+      const img = await waitForResult(j.prompt_id);
+      const url = viewUrl(img);
+      lastResult = { url, img };
+      resultImg.src = url; resultImg.hidden = false;
+      $("openBtn").href = url; actions.hidden = false;
+      barFill.style.width = "100%";
+      setStatus("Done in " + Math.round((Date.now() - started) / 1000) + "s. Saved on your drive as " + img.filename, "ok");
+      refreshGallery();
+    } catch (err) {
+      setStatus(err.message || String(err), "error");
+      resultHint.hidden = !resultImg.hidden;
+    } finally {
+      stop(); busy = false; go.disabled = false; go.textContent = "Make it"; spinner.hidden = true;
+      setTimeout(() => { bar.hidden = true; }, 1500);
+    }
+  });
+
+  // Put the last result into Picture 1 to keep editing it.
+  $("reuseBtn").addEventListener("click", async () => {
+    if (!lastResult) return;
+    const blob = await (await fetch(lastResult.url)).blob();
+    setFile(0, new File([blob], lastResult.img.filename, { type: blob.type || "image/png" }));
+    if (mode === "create") setMode("edit");
+    promptEl.focus();
+  });
+
+  // ----- Recent images from ComfyUI history -----
+  async function refreshGallery() {
+    try {
+      const h = await (await fetch("/history?max_items=24")).json();
+      const imgs = Object.values(h).reverse().flatMap((e) => Object.values(e.outputs || {}).flatMap((o) => o.images || []))
+        .filter((i) => i.type === "output").slice(0, 24);
+      const g = $("gallery"); g.innerHTML = "";
+      imgs.forEach((i) => {
+        const el = document.createElement("img");
+        el.src = viewUrl(i); el.alt = i.filename; el.loading = "lazy";
+        el.addEventListener("click", () => window.open(viewUrl(i), "_blank"));
+        g.appendChild(el);
+      });
+      $("galleryHint").hidden = imgs.length > 0;
+    } catch {}
+  }
+
+  setMode("edit");
+  loadModels();
+  refreshGallery();
+})();
+</script>
+</body>
+</html>
