@@ -38,12 +38,15 @@ Mac (no symlink support), so everything that runs lives in the APFS image **AIKI
 The image and everything in it only works on **Apple Silicon Macs** (M1 or newer).
 
 ## How I use it
-1. Plug in AIRDRIVE, then double-click `AIKit.sparsebundle` (AIKIT appears).
-2. Double-click `Start ComfyUI.command` on AIKIT. The simple page opens at
-   `http://127.0.0.1:1234/simple` (ComfyUI's full editor is at `http://127.0.0.1:1234`).
-3. The simple page has three tabs: edit a picture, put a character in a scene
-   (Picture 1 = scene, Picture 2 = character), or create from a description.
-4. To quit: Ctrl+C in the ComfyUI Terminal window, eject AIKIT, then eject AIRDRIVE.
+- **Start:** plug in AIRDRIVE, double-click **`Start AI.command`** on it. It opens AIKIT,
+  starts ComfyUI and opens the simple page at `http://127.0.0.1:1234/simple`
+  (ComfyUI's full editor is at `http://127.0.0.1:1234`). Keep its Terminal window open.
+- **Stop:** double-click **`Stop AI.command`** on AIRDRIVE. It quits ComfyUI, ejects AIKIT,
+  then ejects AIRDRIVE. Unplug when AIRDRIVE disappears from Finder.
+- The simple page has three tabs: edit a picture, put a character in a scene
+  (Picture 1 = scene, Picture 2 = character), or create from a description.
+- Manual way (if the buttons fail): double-click `AIKit.sparsebundle`, then
+  `AIKIT/Start ComfyUI.command`; to quit, Ctrl+C in its Terminal, eject AIKIT, then AIRDRIVE.
 
 ## Model notes
 - The model is **Qwen-Image-Edit 2511**, "Rapid AIO v23" (4-step) community merge, GGUF Q3_K.
@@ -52,7 +55,7 @@ The image and everything in it only works on **Apple Silicon Macs** (M1 or newer
 - 16 GB memory is the limit: the 28 GB file gets `Killed: 9`. Keep output around 512 px.
 - Setup scripts live in my GitHub repo `jpolsley/Image-gen`, folder `local-setup/`
   (branch `claude/github-qwen-image-gen-0wx25d`): `setup-aikit.sh`, `add-lite-qwen.sh`,
-  `add-simple-ui.sh`.
+  `add-simple-ui.sh`, `add-launchers.sh`.
 
 ## Adding more things
 - **New AI models** go in the matching `AIKIT/ComfyUI/models/<type>/` folder
